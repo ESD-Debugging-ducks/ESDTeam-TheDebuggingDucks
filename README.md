@@ -26,13 +26,18 @@ cd ESDTeam-TheDebuggingDucks
 npm install
 ```
 
-### 3. Start the Development Server
+### 3. Create .env file with the following contents
+
+VITE_RAGFLOW_BASE_URL=https://ragflow.piersman.co.uk/api/v1
+VITE_RAGFLOW_API_KEY={API_KEY}
+
+### 4. Start the Development Server
 
 ```zsh
 npm run dev
 ```
 
-### 4. Open the App in Your Browser
+### 5. Open the App in Your Browser
 
 ```zsh
 Navigate to http://localhost:5173.
