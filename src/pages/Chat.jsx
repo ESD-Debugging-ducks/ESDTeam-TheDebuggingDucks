@@ -22,6 +22,7 @@ import {
   createSessionWithChat,
   createChatAssistant,
   listDatasets,
+  getLastMessage,
 } from "../api/ragflowApi";
 
 const Chat = () => {
@@ -35,10 +36,11 @@ const Chat = () => {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [spinnerError, setSpinnerError] = useState(false);
   const [datasetId, setDatasetId] = useState(null);
   const [chatId, setChatId] = useState(null);
   const [sessionId, setSessionId] = useState(null);
-  const [isSessionInitializing, setIsSessionInitializing] = useState(true);
+  const [isSessionInitialising, setIsSessionInitialising] = useState(true);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -72,10 +74,10 @@ const Chat = () => {
         return;
       }
       try {
-        const savedChatId = localStorage.getItem("chatId");
+        const savedChatId = sessionStorage.getItem("chatId");
         if (savedChatId) {
           setChatId(savedChatId);
-          console.log("Loaded chatId from localStorage:", savedChatId);
+          console.log("Loaded chatId from sessionStorage:", savedChatId);
           return;
         }
 
@@ -87,7 +89,7 @@ const Chat = () => {
           );
           if (existingChat) {
             setChatId(existingChat.id);
-            localStorage.setItem("chatId", existingChat.id);
+            sessionStorage.setItem("chatId", existingChat.id);
             console.log("Using existing chatId:", existingChat.id);
           } else {
             console.warn(
@@ -100,7 +102,7 @@ const Chat = () => {
             });
             if (newChatResponse.code === 0 && newChatResponse.data) {
               setChatId(newChatResponse.data.id);
-              localStorage.setItem("chatId", newChatResponse.data.id);
+              sessionStorage.setItem("chatId", newChatResponse.data.id);
               console.log("Created new chatId:", newChatResponse.data.id);
             } else {
               console.error(
@@ -118,7 +120,7 @@ const Chat = () => {
           });
           if (newChatResponse.code === 0 && newChatResponse.data) {
             setChatId(newChatResponse.data.id);
-            localStorage.setItem("chatId", newChatResponse.data.id);
+            sessionStorage.setItem("chatId", newChatResponse.data.id);
             console.log("Created new chatId:", newChatResponse.data.id);
           } else {
             console.error(
@@ -141,10 +143,10 @@ const Chat = () => {
         return;
       }
       try {
-        const savedSessionId = localStorage.getItem("sessionId");
+        const savedSessionId = sessionStorage.getItem("sessionId");
         if (savedSessionId) {
           setSessionId(savedSessionId);
-          console.log("Loaded sessionId from localStorage:", savedSessionId);
+          console.log("Loaded sessionId from sessionStorage:", savedSessionId);
         } else {
           console.log("Creating a new session...");
           const sessionData = { name: "User Session" };
@@ -156,9 +158,9 @@ const Chat = () => {
           if (sessionResponse.code === 0 && sessionResponse.data) {
             const newSessionId = sessionResponse.data.id;
             setSessionId(newSessionId);
-            localStorage.setItem("sessionId", newSessionId);
+            sessionStorage.setItem("sessionId", newSessionId);
             console.log(
-              "Created new sessionId and stored in localStorage:",
+              "Created new sessionId and stored in sessionStorage:",
               newSessionId
             );
           } else {
@@ -171,18 +173,18 @@ const Chat = () => {
       } catch (error) {
         console.error("Error during session initialisation:", error);
       } finally {
-        setIsSessionInitializing(false);
+        setIsSessionInitialising(false);
       }
     }
 
     initializeSession();
-  }, [chatId]);
+  }, [chatId, sessionId]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    if (isSessionInitializing) {
-      alert("Chat session is still initializing. Please wait a moment.");
+    if (isSessionInitialising) {
+      alert("Chat session is still initialising. Please wait a moment.");
       return;
     }
 
@@ -201,6 +203,7 @@ const Chat = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
+    setSpinnerError(false);
 
     try {
       const conversationData = {
@@ -223,28 +226,91 @@ const Chat = () => {
           timestamp: new Date().toLocaleTimeString(),
         };
         setMessages((prev) => [...prev, botMessage]);
+      } else if (response.code === 401) {
+        await initialiseNewSession();
+        handleSend();
+      } else if (response.code === 405) {
+        setSpinnerError(true);
       } else {
-        const errorMessage = {
-          id: messages.length + 1,
-          sender: "assistant",
-          text: `Error: ${
-            response.message || "Something went wrong. Please try again."
-          }`,
-          timestamp: new Date().toLocaleTimeString(),
-        };
-        setMessages((prev) => [...prev, errorMessage]);
+        try {
+          const lastMessage = await getLastMessage(chatId, sessionId);
+          if (lastMessage) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: prev.length + 1,
+                sender: lastMessage.role === "assistant" ? "assistant" : "user",
+                text: lastMessage.content,
+                timestamp: new Date().toLocaleTimeString(),
+              },
+            ]);
+          }
+        } catch (error) {
+          console.error(
+            "Error fetching the last message after failure:",
+            error
+          );
+        }
       }
     } catch (error) {
       console.error("Error conversing with chat assistant:", error);
-      const errorMessage = {
-        id: messages.length + 1,
-        sender: "assistant",
-        text: `Error: ${error.message}`,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      try {
+        const lastMessage = await getLastMessage(chatId, sessionId);
+        if (lastMessage) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: prev.length + 1,
+              sender: lastMessage.role === "assistant" ? "assistant" : "user",
+              text: lastMessage.content,
+              timestamp: new Date().toLocaleTimeString(),
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error("Error fetching the last message after failure:", error);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const initialiseNewSession = async () => {
+    try {
+      const sessionData = { name: "User Session" };
+      const sessionResponse = await createSessionWithChat(chatId, sessionData);
+
+      if (sessionResponse.code === 0 && sessionResponse.data) {
+        const newSessionId = sessionResponse.data.id;
+        setSessionId(newSessionId);
+        sessionStorage.setItem("sessionId", newSessionId);
+        console.log(
+          "Created new sessionId and stored in sessionStorage:",
+          newSessionId
+        );
+
+        const lastMessage = await getLastMessage(chatId, newSessionId);
+        if (lastMessage) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: prev.length,
+              sender: lastMessage.role === "assistant" ? "assistant" : "user",
+              text: lastMessage.content,
+              timestamp: new Date().toLocaleTimeString(),
+            },
+          ]);
+        }
+      } else {
+        console.error(
+          "Failed to create a new session:",
+          sessionResponse.message
+        );
+        alert("Failed to create a new session. Please try again later.");
+      }
+    } catch (error) {
+      console.error("Error during session initialisation:", error);
+      alert("An error occurred while initialising a new session.");
     }
   };
 
@@ -312,7 +378,12 @@ const Chat = () => {
                 </ListItemAvatar>
                 <ListItemText
                   primary="Tutor"
-                  secondary={<CircularProgress size={20} />}
+                  secondary={
+                    <CircularProgress
+                      size={20}
+                      color={spinnerError ? "error" : "primary"}
+                    />
+                  }
                 />
               </ListItem>
             )}
@@ -329,14 +400,14 @@ const Chat = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress}
-            disabled={loading || isSessionInitializing}
+            disabled={loading || isSessionInitialising}
             slotProps={{
               input: {
                 endAdornment: (
                   <IconButton
                     color="primary"
                     onClick={handleSend}
-                    disabled={loading || !input.trim() || isSessionInitializing}
+                    disabled={loading || !input.trim() || isSessionInitialising}
                   >
                     <SendIcon />
                   </IconButton>

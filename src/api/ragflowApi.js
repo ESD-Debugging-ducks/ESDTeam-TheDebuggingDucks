@@ -118,3 +118,35 @@ export async function listDatasets(params = {}) {
   const query = new URLSearchParams(params).toString();
   return await apiRequest(`/datasets?${query}`, "GET");
 }
+
+// Gets the last message in the session
+export async function getLastMessage(chatId, sessionId) {
+  try {
+    const response = await listSessions(chatId, { id: sessionId });
+
+    if (response.code !== 0) {
+      throw new Error(
+        response.message || "Failed to retrieve session details."
+      );
+    }
+
+    const sessions = response.data;
+
+    if (!sessions || sessions.length === 0) {
+      console.warn("Session not found.");
+      return null;
+    }
+
+    const session = sessions[0];
+
+    if (!session.messages || session.messages.length === 0) {
+      console.warn("No messages found in the session.");
+      return null;
+    }
+
+    return session.messages[session.messages.length - 1];
+  } catch (error) {
+    console.error("Error fetching the last message:", error);
+    throw error;
+  }
+}
