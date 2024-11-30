@@ -24,8 +24,13 @@ import {
   listDatasets,
   getLastMessage,
 } from "../api/ragflowApi";
+import { useSearchParams } from 'react-router-dom'
 
 const Chat = () => {
+  // eslint-disable-next-line no-unused-vars
+  const [searchParams, setSearchParams] = useSearchParams();
+  const moduleName = searchParams.get('module');
+
   const [messages, setMessages] = useState([
     {
       id: 0,
@@ -51,7 +56,7 @@ const Chat = () => {
     async function fetchDataset() {
       try {
         console.log("Fetching datasets...");
-        const response = await listDatasets({ page: 1, page_size: 1 });
+        const response = await listDatasets({ name: moduleName, page_size: 1 });
         if (response.code === 0 && response.data.length > 0) {
           const firstDataset = response.data[0];
           setDatasetId(firstDataset.id);
@@ -66,7 +71,7 @@ const Chat = () => {
     }
 
     fetchDataset();
-  }, []);
+  }, [moduleName]);
 
   useEffect(() => {
     async function fetchOrCreateChatId() {
