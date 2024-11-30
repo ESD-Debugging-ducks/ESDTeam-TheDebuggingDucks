@@ -1,6 +1,6 @@
 import { Box, Typography, Container, Button, FormControl, Select, MenuItem, Divider } from "@mui/material";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, createSearchParams } from "react-router-dom";
 
 const Welcome = () => {
   const [module, setModule] = useState('');
@@ -35,7 +35,12 @@ const Welcome = () => {
           </Select>
           {module !== '' && (
             <div style={{ alignSelf: "center" }}>
-              <Button variant="contained" color="secondary" component={Link} to="/chat">
+              <Button variant="contained" color="secondary" component={Link} to={{
+                pathname: "/chat",
+                search: `?${createSearchParams({
+                  module: module
+                })}`
+              }}>
                 Continue
               </Button>
             </div>
