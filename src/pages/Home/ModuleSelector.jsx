@@ -1,30 +1,11 @@
-import { Box, Typography, Container, Button, FormControl, Select, MenuItem, Divider } from "@mui/material";
-import { useState } from "react";
+import { Typography, Button, FormControl, Select, MenuItem } from "@mui/material";
 import { Link, createSearchParams } from "react-router-dom";
 
-const Welcome = () => {
-  const [module, setModule] = useState('');
-  return (
-    <Container
-      id="container"
-      maxWidth="sm"
-    >
-      <Box
-        sx={{
-          textAlign: "center",
-          marginTop: "10rem",
-          padding: "1rem",
-        }}
-      >
-        <FormControl sx={{ gap: 1 }}>
-          <Typography variant="h4" gutterBottom>
-            Welcome
-          </Typography>
-          <Divider />
-          <Typography variant="body1" gutterBottom>
-            Please select the course you require help for:
-          </Typography>
-        </FormControl>
+const ModuleSelecter = ({
+    module,
+    setModule
+}) => {
+    return (
         <FormControl sx={{ textAlign: "left", display: "flex", flexFlow: "row-wrap", gap: 2 }}>
           <Typography>Module</Typography>
           <Select
@@ -46,9 +27,6 @@ const Welcome = () => {
             </div>
           )}
         </FormControl>
-
-      </Box>
-    </Container>
-  );
+    )
 }
-export default Welcome;
+export default ModuleSelecter;

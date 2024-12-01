@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import Welcome from "./pages/Welcome";
+import Home from "./pages/Home/Home";
 import Chat from "./pages/Chat";
 import { AppBar, Toolbar, Typography } from "@mui/material";
 
@@ -13,7 +13,7 @@ const App = () => (
       </Toolbar>
     </AppBar>
     <Routes>
-      <Route path="/" element={<Welcome />} />
+      <Route path="/" element={<Home />} />
       <Route path="/chat" element={<Chat />} />
     </Routes>
   </div>
