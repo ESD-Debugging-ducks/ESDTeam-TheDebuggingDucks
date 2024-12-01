@@ -1,7 +1,7 @@
 import { Typography, Button, FormControl, Select, MenuItem } from "@mui/material";
 import { Link, createSearchParams } from "react-router-dom";
 
-const ModuleSelecter = ({
+const ModuleSelector = ({
     module,
     setModule
 }) => {
@@ -29,4 +29,4 @@ const ModuleSelecter = ({
         </FormControl>
     )
 }
-export default ModuleSelecter;
+export default ModuleSelector;
