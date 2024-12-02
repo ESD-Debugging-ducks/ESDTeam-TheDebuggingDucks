@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home/Home";
-import Chat from "./pages/Chat";
+import Chat from "./pages/Chat/Chat";
 import { AppBar, Toolbar, Typography } from "@mui/material";
 
 const App = () => (

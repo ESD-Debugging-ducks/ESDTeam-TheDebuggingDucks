@@ -25,7 +25,7 @@ const Home = () => {
             Please select the course you require help for:
           </Typography>
         </FormControl>
-        <ModuleSelecter module={module} setModule={setModule}/>
+        <ModuleSelecter module={module} setModule={setModule} />
       </Box>
     </Container>
   );
